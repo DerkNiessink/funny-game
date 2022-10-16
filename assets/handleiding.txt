@@ -1,0 +1,6 @@
+Dit bestand is pas van belang voor deel 2 van de opdracht.
+
+Schrijf hier een korte handleiding voor je spel. Leg uit waar het spel over
+gaat, wat je moet doen en hoe je het moet besturen.
+
+Je mag ook de instructies in je spel zelf opnemen, vermeld dat dan hier even.
