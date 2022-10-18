@@ -49,6 +49,8 @@ rooster *rooster_maak(int breedte, int hoogte, float prob);
 */
 void rooster_schrijf(const rooster *rp, FILE *fh);
 
+rooster *rooster_kopieer(const rooster *rp);
+
 
 /* Vraag de huidige toestand van het spel op.
 

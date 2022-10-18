@@ -39,6 +39,7 @@
 #define SPELER_PAAR   4
 #define MUUR2_PAAR    5
 #define PAD_PAAR      6
+#define MENU_PAAR     7
 
 
 
@@ -46,7 +47,7 @@
 
    rp: een pointer naar het rooster.
 */
-void toon_rooster(rooster *rp, int pad) {
+void toon_rooster(rooster *rp, int pad, int verschuiving_x, int verschuiving_y) {
     erase();
 
     int kleur;
@@ -56,11 +57,11 @@ void toon_rooster(rooster *rp, int pad) {
         kleur = FINISH_PAAR;
     }
 
-    int offset_y, offset_x;
+    int offset_x, offset_y;
     for (int y = 0; y < rooster_hoogte(rp); y++) {
         for (int x = 0; x < rooster_breedte(rp); x++) {
-            offset_x = 60 + x;
-            offset_y = y + 2;
+            offset_x = verschuiving_x + x;
+            offset_y = verschuiving_y + y;
 
             switch(rooster_kijk(rp, x, y)) {
                 case SPELER:
@@ -133,10 +134,10 @@ void stroom_lava(rooster *rp, int y) {
 }
 
 
-void toon_pad(rooster *rp) {
+void toon_pad(rooster *rp, int offset_x, int offset_y) {
     time_t wacht = time(NULL) + 3;
     while(time(NULL) < wacht) {
-        toon_rooster(rp, 1);
+        toon_rooster(rp, 1, offset_x, offset_y);
     }
 }
 
@@ -144,9 +145,9 @@ void toon_pad(rooster *rp) {
 /* Speelt het spel met een gegeven rooster tot de toestand niet langer
    AAN_HET_SPELEN is.
  */
-void speel(rooster *rp) {
+void speel(rooster *rp, int offset_x, int offset_y) {
 
-    toon_pad(rp);
+    toon_pad(rp, offset_x, offset_y);
     int lava_y = rooster_hoogte(rp);
     int tijd = 0;
     int *x = malloc(sizeof(int));
@@ -173,7 +174,7 @@ void speel(rooster *rp) {
             lava_y--;
         }
 
-        toon_rooster(rp, 0);
+        toon_rooster(rp, 0, offset_x, offset_y);
         int toets = getch();
         switch (toets) {
             case KEY_LEFT: beweeg(rp, -1, 0, x, y); break;
@@ -193,7 +194,7 @@ rooster *vind_random_rooster(void) {
 
     rooster *rooster1;
     while(1) {
-        rooster1 = rooster_maak(50, 50, 0.5);
+        rooster1 = rooster_maak(50, 40, 0.48);
         if (start_algoritme(rooster1) == 1) {
             break;
         }
@@ -203,20 +204,77 @@ rooster *vind_random_rooster(void) {
 }
 
 
+void draw_border(WINDOW *window) {
+
+    for (int y = 0; y < getmaxy(window); y++) {
+        mvwprintw(window, y, 0, "|");
+        mvwprintw(window, y, getmaxx(window)-1, "|");
+    }
+    for (int x = 0; x < getmaxx(window); x++) {
+        mvwprintw(window, 0, x, "~");
+        mvwprintw(window, getmaxy(window)-1, x, "~");
+    }
+}
+
+
+void toon_menu(rooster *rp, rooster *rp_onaangepast, int offset_x, int offset_y) {
+
+    int menu_breedte = rooster_breedte(rp)+4;
+    int menu_hoogte = 9;
+
+    WINDOW *window = newwin(
+        menu_hoogte,
+        menu_breedte,
+        rooster_hoogte(rp)/2 - offset_y,
+        rooster_breedte(rp)/2 + offset_x - menu_breedte/2
+        );
+
+    wbkgd(window, COLOR_PAIR(MENU_PAAR));
+
+    int toets;
+    int verlaat = 0;
+    int opnieuw = 0;
+    while(!verlaat) {
+
+        draw_border(window);
+        if (rooster_vraag_toestand(rp) == GEWONNEN) {
+            mvwprintw(window, 2, 4, "Je hebt gewonnen! :)");
+        } else {
+            mvwprintw(window, 2, 4, "Je hebt verloren :(");
+        }
+        mvwprintw(window, 4, 2, "> \"R\": speel opnieuw");
+        mvwprintw(window, 5, 2, "> \"G\": genereer nieuw level");
+        mvwprintw(window, 6, 2, "> \"Q\": verlaat spel");
+        wrefresh(window);
+
+        int toets = getch();
+        switch(toets) {
+            case 'q': verlaat = 1; break;
+            case 'r': verlaat = 1; opnieuw = 1; break;
+        }
+    }
+    if (opnieuw) {
+        speel(rp_onaangepast, offset_x, offset_y);
+        toon_menu(rp, rp_onaangepast, offset_x, offset_y);
+    }
+}
+
+
 void init_ncurses(void) {
     initscr();
     cbreak();
     keypad(stdscr, TRUE);
     noecho();
+    curs_set(0);
     start_color();
     init_color(COLOR_GREEN, 0, 700, 0);
-    curs_set(0);
     init_pair(MUUR_PAAR, COLOR_YELLOW, COLOR_CYAN);
     init_pair(FINISH_PAAR, COLOR_GREEN, COLOR_BLACK);
     init_pair(LAVA_PAAR, COLOR_RED, COLOR_RED);
     init_pair(SPELER_PAAR, COLOR_YELLOW, COLOR_BLACK);
     init_pair(MUUR2_PAAR, COLOR_BLUE, COLOR_BLUE);
     init_pair(PAD_PAAR, COLOR_GREEN, COLOR_GREEN);
+    init_pair(MENU_PAAR, COLOR_CYAN, COLOR_BLACK);
 }
 
 
@@ -224,16 +282,15 @@ int main(int argc, char *argv[]) {
 
     srand(time(NULL));
     rooster *rooster1 = vind_random_rooster();
+    rooster *rooster1_kopie = rooster_kopieer(rooster1);
+    int offset_x = 7;
+    int offset_y = 3;
     init_ncurses();
 
-    speel(rooster1);
-    endwin();
 
-    if (rooster_vraag_toestand(rooster1) == GEWONNEN) {
-        printf("Je hebt gewonnen! :)\n");
-    } else {
-        printf("Je hebt verloren :(\n");
-    }
+    speel(rooster1, offset_x, offset_y);
+    toon_menu(rooster1, rooster1_kopie, offset_x, offset_y);
+    endwin();
 
     rooster_klaar(rooster1);
 

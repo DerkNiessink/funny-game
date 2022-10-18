@@ -60,6 +60,23 @@ rooster *rooster_maak(int breedte, int hoogte, float prob) {
 }
 
 
+rooster *rooster_kopieer(const rooster *rp) {
+
+   int grootte = rooster_breedte(rp) * rooster_hoogte(rp);
+   rooster *rooster1 = malloc(sizeof(rooster));
+
+   int *rooster = malloc(grootte * sizeof(int));
+   memcpy(rooster, rp->rooster, grootte * sizeof(int));
+
+   rooster1->toestand = rooster_vraag_toestand(rp);
+   rooster1->breedte = rooster_breedte(rp);
+   rooster1->hoogte = rooster_hoogte(rp);
+   rooster1->rooster = rooster;
+
+   return rooster1;
+}
+
+
 void rooster_schrijf(const rooster *rp, FILE *fh) {
    int grootte = rp->hoogte * rp->breedte;
    fwrite(rp->rooster, 1, grootte, fh);
