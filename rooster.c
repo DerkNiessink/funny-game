@@ -77,12 +77,6 @@ rooster *rooster_kopieer(const rooster *rp) {
 }
 
 
-void rooster_schrijf(const rooster *rp, FILE *fh) {
-   int grootte = rp->hoogte * rp->breedte;
-   fwrite(rp->rooster, 1, grootte, fh);
-}
-
-
 toestand rooster_vraag_toestand(const rooster *rp) {
    return rp->toestand;
 }
