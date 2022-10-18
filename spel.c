@@ -293,6 +293,7 @@ int main(int argc, char *argv[]) {
     endwin();
 
     rooster_klaar(rooster1);
+    rooster_klaar(rooster1_kopie);
 
     return 0;
 }
