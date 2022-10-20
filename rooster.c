@@ -20,7 +20,7 @@ typedef struct rooster_data {
 
 
 rooster *rooster_maak(int breedte, int hoogte, float prob) {
-
+   int buren[8] = {0, 1, 1, 0, 0, -1, -1, 0};
    int grootte = breedte * hoogte;
    rooster *rooster1 = malloc(sizeof(rooster));
    int *rooster = malloc(grootte * sizeof(int));
@@ -40,13 +40,7 @@ rooster *rooster_maak(int breedte, int hoogte, float prob) {
             continue;
          }
 
-         float rand_num = (double) rand() / (double) RAND_MAX;
-
-         if (rand_num < prob) {
-            rooster1->rooster[i] = 1;
-         } else {
-            rooster1->rooster[i] = 0;
-         }
+         rooster_plaats_random(rooster1, x, y, prob, 1, 0);
       }
       int i = y * breedte;
       rooster1->rooster[i] = -1;
@@ -57,6 +51,18 @@ rooster *rooster_maak(int breedte, int hoogte, float prob) {
    zet_kolom(rooster1, rooster_breedte(rooster1)-1, 0);
 
    return rooster1;
+}
+
+
+void rooster_plaats_random(const rooster *rp, int x, int y, float prob, int waarde_1, int waarde_2) {
+   float rand_num = (double) rand() / (double) RAND_MAX;
+   int i = y * rp->breedte + x;
+
+   if (rand_num < prob) {
+      rp->rooster[i] = waarde_1;
+   } else {
+      rp->rooster[i] = waarde_2;
+      }
 }
 
 

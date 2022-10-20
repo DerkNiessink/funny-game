@@ -2,7 +2,7 @@
 #include "rooster.h"
 
 
-int start_algoritme(rooster *rp);
+int burn_alg(rooster *rp);
 
 void init_rooster(rooster *rp);
 

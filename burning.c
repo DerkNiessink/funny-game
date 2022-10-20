@@ -33,7 +33,7 @@ int perculating_cluster(int *plekken, rooster *rp) {
     return 0;
 }
 
-int start_algoritme(rooster *rp) {
+int burn_alg(rooster *rp) {
 
     int step = 2;
     int rooster_grootte = rooster_breedte(rp) * rooster_hoogte(rp);

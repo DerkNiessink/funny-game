@@ -4,12 +4,13 @@
  * Studie : BSc Informatica
  *
  * opdracht_2.c:
- * − Dit is een programma voor een spel waarbij de speler zich met de
- * pijltjestoetsen door een doolhof moet navigeren om de schat te bereiken en
- * de bommen moet ontwijken. Het spel wordt gespeeld in de command line. Een
- * path naar een tekst file met een doolhof moet door de gebruiker worden
- * gespecificeerd bij het opstarten van het spel. Het programma accepteert
- * alleen doolhoven, waarin alle rijen en kolommen even lang zijn.
+ * − Dit is een programma voor een spel waarin de speler met de
+ * pijltjestoetsen een toren moet beklimmen. De speler moet zowel snel als
+ * voorzichtig zijn omdat de toren zich vult met lava en sommige delen van de
+ * muren al in de fik staan. De levels zijn random gegeneert met een bepaalde
+ * kans op normale muren en muren die in de fik staan. Met het burning
+ * algoritme wordt er gecheckt dat het level altijd een pad van onder naar
+ * boven bevat.
  *
  */
 
@@ -25,6 +26,14 @@
 #include "burning.h"
 
 
+/* Deze waardes bepalen de moeilijkheid van het spel */
+#define BREEDTE    50
+#define HOOGTE     40
+#define PAD_KANS   0.48
+#define LAVA_KANS  0.05
+#define LAVA_TIJD  30
+
+/* Spel objecten */
 #define MUUR     0
 #define LEEG     1
 #define FINISH   2
@@ -33,6 +42,7 @@
 #define LAVA     -3
 #define MUUR2    -4
 
+/* kleur paren */
 #define MUUR_PAAR     1
 #define FINISH_PAAR   2
 #define LAVA_PAAR     3
@@ -41,16 +51,25 @@
 #define PAD_PAAR      6
 #define MENU_PAAR     7
 
+#define OFFSET_X   7
+#define OFFSET_Y   3
 #define OPNIEUW      1
 #define NIEUW_LEVEL  2
 
+const int buren[4][2] = { {1, 0}, {-1, 0}, {0, -1}, {0, 1} };
+const int right[2] = {1, 0};
+const int left[2] = {-1, 0};
+const int up[2] = {0, -1};
+const int down[2] = {0, 1};
 
 
-/* Toont het gegeven rooster met ncurses.
+/* Toont het gegeven rooster met ncurses. Als de pad waarde 1 is, toon
+   dan de paden van onder naar boven.
 
    rp: een pointer naar het rooster.
+   pad: boolean integer waarde van 0 of 1.
 */
-void toon_rooster(rooster *rp, int pad, int verschuiving_x, int verschuiving_y) {
+void toon_rooster(rooster *rp, int pad) {
     erase();
 
     int kleur;
@@ -60,42 +79,55 @@ void toon_rooster(rooster *rp, int pad, int verschuiving_x, int verschuiving_y) 
         kleur = FINISH_PAAR;
     }
 
-    int offset_x, offset_y;
-    for (int y = 0; y < rooster_hoogte(rp); y++) {
-        for (int x = 0; x < rooster_breedte(rp); x++) {
-            offset_x = verschuiving_x + x;
-            offset_y = verschuiving_y + y;
+    int x, y;
+    for (int pos_y = 0; pos_y < rooster_hoogte(rp); pos_y++) {
+        for (int pos_x = 0; pos_x < rooster_breedte(rp); pos_x++) {
+            x = pos_x + OFFSET_X;
+            y = pos_y + OFFSET_Y;
 
-            switch(rooster_kijk(rp, x, y)) {
+            switch(rooster_kijk(rp, x - OFFSET_X, y - OFFSET_Y)) {
                 case SPELER:
                     attron(COLOR_PAIR(SPELER_PAAR));
-                    mvaddch(offset_y, offset_x, 'o');
-                    attroff(COLOR_PAIR(SPELER_PAAR)); break;
+                    mvaddch(y, x, 'o');
+                    attroff(COLOR_PAIR(SPELER_PAAR));
+                    break;
                 case FINISH:
                     attron(COLOR_PAIR(kleur));
-                    mvaddch(offset_y, offset_x, '=');
-                    attroff(COLOR_PAIR(kleur)); break;
+                    mvaddch(y, x, '=');
+                    attroff(COLOR_PAIR(kleur));
+                    break;
                 case GRENS:
-                    mvaddch(offset_y, offset_x, '\n'); break;
+                    mvaddch(y, x, '\n');
+                    break;
                 case MUUR:
                     attron(COLOR_PAIR(MUUR_PAAR));
-                    mvaddch(offset_y, offset_x, ' ');
-                    attroff(COLOR_PAIR(MUUR_PAAR)); break;
+                    mvaddch(y, x, ' ');
+                    attroff(COLOR_PAIR(MUUR_PAAR));
+                    break;
                 case MUUR2:
                     attron(COLOR_PAIR(MUUR2_PAAR));
-                    mvaddch(offset_y, offset_x, ' ');
-                    attroff(COLOR_PAIR(MUUR2_PAAR)); break;
+                    mvaddch(y, x, ' ');
+                    attroff(COLOR_PAIR(MUUR2_PAAR));
+                    break;
                 case LAVA:
                     attron(COLOR_PAIR(LAVA_PAAR));
-                    mvaddch(offset_y, offset_x, ' ');
-                    attroff(COLOR_PAIR(LAVA_PAAR)); break;
+                    mvaddch(y, x, ' ');
+                    attroff(COLOR_PAIR(LAVA_PAAR));
+                    break;
+
                 default:
-                    if (pad && (rooster_kijk(rp, x, y) > 3 || y == 1)) {
+                    /* Alle integer waarden van het rooster groter dan 3 geven
+                    het pad aan */
+                    if (
+                        pad &&
+                        (rooster_kijk(rp, x - OFFSET_X, y - OFFSET_Y) > 3 ||
+                        (y - OFFSET_Y) == 1)
+                    ) {
                         attron(COLOR_PAIR(PAD_PAAR));
-                        mvaddch(offset_y, offset_x, ' ');
+                        mvaddch(y, x, ' ');
                         attroff(COLOR_PAIR(PAD_PAAR));
                     } else {
-                    mvaddch(offset_y, offset_x, ' ');
+                    mvaddch(y, x, ' ');
                     }
             }
         }
@@ -107,15 +139,20 @@ void toon_rooster(rooster *rp, int pad, int verschuiving_x, int verschuiving_y) 
 /* Voert de benodigde veranderingen in het rooster door als de speler in een
    bepaalde richting probeert te bewegen.
 
-   rp   : een pointer naar het rooster
-   dx,dy: de richting waarin de speler probeert te bewegen. De vier mogelijk-
-          heden voor (dx,dy) zijn (-1,0), (1,0), (0,-1), (0,1) voor resp.
-          links, rechts, omhoog en omlaag.
+   rp: een pointer naar het rooster
+   richting: pointer naar de richting waarin de speler probeert te bewegen. De
+             vier mogelijkheden voor de richting zijn (-1,0), (1,0), (0,-1),
+             (0,1) voor resp. links, rechts, omhoog en omlaag.
 
    Side effect: het rooster wordt aangepast op basis van de handeling van
                 de speler.
 */
-void beweeg(rooster *rp, int dx, int dy, int *x, int *y) {
+void beweeg(rooster *rp, const int *richting) {
+    int dx = richting[0];
+    int dy = richting[1];
+    int *x = malloc(sizeof(int));
+    int *y = malloc(sizeof(int));
+    rooster_zoek(rp, SPELER, x, y);
 
     switch(rooster_kijk(rp, *x + dx, *y + dy)) {
         case FINISH: rooster_zet_toestand(rp, GEWONNEN); break;
@@ -126,10 +163,19 @@ void beweeg(rooster *rp, int dx, int dy, int *x, int *y) {
             rooster_plaats(rp, *x, *y, LEEG);
             rooster_plaats(rp, *x + dx , *y + dy, SPELER); break;
     }
+    free(x);
+    free(y);
 
 }
 
 
+/* Laat de lava de kamer binnen stromen tot een bepaalde hoogte. Let hierbij op
+   dat in het spel y = 0 de hoogste waarde is en de positieve waarde van de
+   rooster hoogte de laagste.
+
+    rp: een pointer naar het rooster.
+    y : pointers naar de huidige positie van de speler.
+*/
 void stroom_lava(rooster *rp, int y) {
     for (int x = 2; x < rooster_breedte(rp)-1; x++) {
         rooster_plaats(rp, x, y, LAVA);
@@ -137,30 +183,64 @@ void stroom_lava(rooster *rp, int y) {
 }
 
 
-void toon_pad(rooster *rp, int offset_x, int offset_y) {
+/* Toont het rooster met de paden van onder naar boven voor een tijdsduur van 3
+   sec.
+
+   rp: een pointer naar het rooster.
+*/
+void toon_pad(rooster *rp) {
     time_t wacht = time(NULL) + 3;
     while(time(NULL) < wacht) {
-        toon_rooster(rp, 1, offset_x, offset_y);
+        toon_rooster(rp, 1);
+    }
+}
+
+
+/* Verandert random muren in lava met een kans van LAVA_KANS. Alleen muren die
+   grenzen aan een LEEG kunnen in lava te veranderen.
+
+   rp: een pointer naar het rooster.
+*/
+void plaats_random_lava(rooster *rp) {
+    int buur_x;
+    int buur_y;
+
+    for (int y = 1; y < rooster_hoogte(rp)-1; y++) {
+        for (int x = 1; x < rooster_breedte(rp)-1; x++) {
+
+            for (int i = 0; i < 4; i++) {
+                buur_x = x + buren[i][0];
+                buur_y = y + buren[i][1];
+                int buur_kar = rooster_kijk(rp, buur_x, buur_y);
+                int kar = rooster_kijk(rp, x, y);
+
+                if (kar == MUUR && buur_kar >= 1) {
+                    rooster_plaats_random(rp, x, y, LAVA_KANS, LAVA, MUUR);
+                }
+            }
+        }
     }
 }
 
 
 /* Speelt het spel met een gegeven rooster tot de toestand niet langer
-   AAN_HET_SPELEN is.
- */
-void speel(rooster *rp, int offset_x, int offset_y) {
+   AAN_HET_SPELEN is. Verandert eerst een random muren in lava en past
+   vervolgens het rooster aan op basis van de handelingen van de speler. Laat
+   elke LAVA_TIJD de lava steeds verder de kamer vullen.
 
-    toon_pad(rp, offset_x, offset_y);
+   rp: een pointer naar het rooster.
+*/
+void speel(rooster *rp) {
+
     int lava_y = rooster_hoogte(rp);
     int tijd = 0;
     int *x = malloc(sizeof(int));
     int *y = malloc(sizeof(int));
 
+    toon_pad(rp);
+    plaats_random_lava(rp);
     rooster_zet_toestand(rp, AAN_HET_SPELEN);
 
-    rooster_plaats(rp, rooster_breedte(rp)-2, rooster_hoogte(rp)-1, SPELER);
-    rooster_plaats(rp, rooster_breedte(rp)-1, rooster_hoogte(rp)-1, MUUR2);
-    rooster_plaats(rp, 1, rooster_hoogte(rp)-1, MUUR2);
 
     while(rooster_vraag_toestand(rp) == AAN_HET_SPELEN) {
 
@@ -171,42 +251,73 @@ void speel(rooster *rp, int offset_x, int offset_y) {
             break;
         }
 
-        // Laat de lava om de twee beurten omhoog stromen
-        if (tijd % 2 == 0 && *y < rooster_hoogte(rp)-2) {
+        if (tijd % LAVA_TIJD == 0 && *y < rooster_hoogte(rp)-2) {
             stroom_lava(rp, lava_y);
             lava_y--;
         }
 
-        toon_rooster(rp, 0, offset_x, offset_y);
+        toon_rooster(rp, 0);
         int toets = getch();
         switch (toets) {
-            case KEY_LEFT: beweeg(rp, -1, 0, x, y); break;
-            case KEY_RIGHT: beweeg(rp, 1, 0, x, y); break;
-            case KEY_UP: beweeg(rp, 0, -1, x, y); break;
-            case KEY_DOWN: beweeg(rp, 0, 1, x, y); break;
+            case KEY_LEFT: beweeg(rp, left); break;
+            case KEY_RIGHT: beweeg(rp, right); break;
+            case KEY_UP: beweeg(rp, up); break;
+            case KEY_DOWN: beweeg(rp, down); break;
         }
-        tijd++;
 
+        tijd++;
+        napms(16);
     }
     free(x);
     free(y);
 }
 
 
+/* Maakt een random rooster en check met het Burning algoritme of deze een pad
+   heeft van onder naar boven. Als dit het geval is, plaats de buitenmuren en 
+   de speler.
+
+   Side-effect: Sluit het spel af en geef een foutmelding als er iets fout is
+   gegaan bij het maken van een rooster of als het te lang duurt.
+
+   Uitvoer: een pointer naar het rooster.
+*/
 rooster *vind_random_rooster(void) {
 
-    rooster *rooster1;
+    rooster *rp;
+    int tijd = time(0);
     while(1) {
-        rooster1 = rooster_maak(50, 40, 0.48);
-        if (start_algoritme(rooster1) == 1) {
+
+        if ((time(0) - tijd) > 15) {
+            printf("Er kon geen level gegegeneerd worden binnen de maximale tijd. ");
+            printf("Probeer eventueel de PAD_KANS bovenaan het programma te verhogen.\n");
+            exit(1);
+        }
+
+        rp = rooster_maak(BREEDTE, HOOGTE, PAD_KANS);
+        if (rp == NULL) {
+            printf("Er is een fout opgetreden bij het genereren van een level.");
+            exit(1);
+        }
+
+        if (burn_alg(rp) == 1) {
             break;
         }
-        rooster_klaar(rooster1);
+        rooster_klaar(rp);
     }
-    return rooster1;
+
+    rooster_plaats(rp, rooster_breedte(rp)-2, rooster_hoogte(rp)-1, SPELER);
+    rooster_plaats(rp, rooster_breedte(rp)-1, rooster_hoogte(rp)-1, MUUR2);
+    rooster_plaats(rp, 1, rooster_hoogte(rp)-1, MUUR2);
+
+    return rp;
 }
 
 
+/* Tekent een window border.
+
+   window: een pointer naar het window.
+*/
 void teken_grens(WINDOW *window) {
 
     for (int y = 0; y < getmaxy(window); y++) {
@@ -220,29 +331,44 @@ void teken_grens(WINDOW *window) {
 }
 
 
-WINDOW *maak_menu(rooster *rp, int menu_breedte, int menu_hoogte, int offset_x, int offset_y) {
+/* Maakt een window bestemt voor een menu
+
+   Uitvoer: een pointer naar het window.
+*/
+WINDOW *maak_menu(void) {
+    int menu_breedte = BREEDTE + 4;
+    int menu_hoogte = 9;
+
     WINDOW *window = newwin(
         menu_hoogte,
         menu_breedte,
-        rooster_hoogte(rp)/2 - offset_y,
-        rooster_breedte(rp)/2 + offset_x - menu_breedte/2
-        );
+        HOOGTE / 2 - OFFSET_Y,
+        BREEDTE / 2 + OFFSET_X - menu_breedte/2
+    );
 
     wbkgd(window, COLOR_PAIR(MENU_PAAR));
     return window;
 }
 
 
-int toon_menu(rooster *rp, rooster *rp_onaangepast, int offset_x, int offset_y) {
+/* Toont het menu waarin de speler kan kiezen tussen het spel verlaten, het
+   level opnieuw spelen of een nieuw level genereren. Speelt het spel opnieuw
+   en roept zichzelf aan als de speler het spel niet wilt verlaten. Het
+   onaangepaste rooster is een argument, omdat deze wordt hergebruikt als de
+   speler kiest om opnieuw te spelen.
 
-    int menu_breedte = rooster_breedte(rp)+4;
-    int menu_hoogte = 9;
-    WINDOW *menu = maak_menu(rp,menu_breedte, menu_hoogte, offset_x, offset_y);
+   rp: een pointer naar het gespeelde rooster.
+   rp_onaangepast: een pointer naar het ongespeelde rooster.
 
+   Uitvoer: 0 als de speler het spel heeft verlaten.
+*/
+int toon_menu(rooster *rp, rooster *rp_onaangepast) {
 
     int toets;
     int keuze;
     int verlaat = 0;
+
+    WINDOW *menu = maak_menu();
     while(!verlaat) {
 
         teken_grens(menu);
@@ -268,8 +394,8 @@ int toon_menu(rooster *rp, rooster *rp_onaangepast, int offset_x, int offset_y) 
     switch(keuze) {
         case OPNIEUW:;
             rooster *rp_onaangepast_kopie = rooster_kopieer(rp_onaangepast);
-            speel(rp_onaangepast, offset_x, offset_y);
-            return toon_menu(rp_onaangepast, rp_onaangepast_kopie, offset_x, offset_y);
+            speel(rp_onaangepast);
+            return toon_menu(rp_onaangepast, rp_onaangepast_kopie);
 
         case NIEUW_LEVEL:
             erase();
@@ -277,8 +403,8 @@ int toon_menu(rooster *rp, rooster *rp_onaangepast, int offset_x, int offset_y) 
             rooster_klaar(rp_onaangepast);
             rooster *nieuw_rooster = vind_random_rooster();
             rooster *nieuw_rooster_kopie = rooster_kopieer(nieuw_rooster);
-            speel(nieuw_rooster, offset_x, offset_y);
-            return toon_menu(nieuw_rooster, nieuw_rooster_kopie, offset_x, offset_y);
+            speel(nieuw_rooster);
+            return toon_menu(nieuw_rooster, nieuw_rooster_kopie);
     }
 
     rooster_klaar(rp_onaangepast);
@@ -286,12 +412,14 @@ int toon_menu(rooster *rp, rooster *rp_onaangepast, int offset_x, int offset_y) 
 }
 
 
+/* Initializeer ncurses functies en kleuren. */
 void init_ncurses(void) {
     initscr();
     cbreak();
     keypad(stdscr, TRUE);
     noecho();
     curs_set(0);
+    timeout(0);
     start_color();
     init_color(COLOR_GREEN, 0, 700, 0);
     init_pair(MUUR_PAAR, COLOR_YELLOW, COLOR_CYAN);
@@ -307,14 +435,13 @@ void init_ncurses(void) {
 int main(int argc, char *argv[]) {
 
     srand(time(NULL));
+
     rooster *rooster1 = vind_random_rooster();
     rooster *rooster1_kopie = rooster_kopieer(rooster1);
-    int offset_x = 7;
-    int offset_y = 3;
     init_ncurses();
 
-    speel(rooster1, offset_x, offset_y);
-    toon_menu(rooster1, rooster1_kopie, offset_x, offset_y);
+    speel(rooster1);
+    toon_menu(rooster1, rooster1_kopie);
     endwin();
 
     return 0;

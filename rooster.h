@@ -12,8 +12,6 @@
 
 #include <stdio.h>
 
- // Dankzij de typedef hoef je niet telkens "struct rooster_data" te schrijven.
- // Definieer struct rooster_data in rooster.c.
 struct rooster_data;
 typedef struct rooster_data rooster;
 
@@ -22,32 +20,25 @@ typedef enum {
 } toestand;
 
 
-/* Maak een rooster met twee karakters die voorkomen met een bepaalde kans.
+/* Maakt een rooster waarbij posities met een bepaalde kans 1 zijn, en anders 0.
 
    breedte: de breedte van het rooster.
    hoogte: de hoogte van het rooster.
-   prob: de kans voor elke positie dat het eerste karakter voorkomt.
+   prob: de kans voor elke positie dat het een 1 is.
 
    Uitvoer: als alles goed gaat, een pointer naar een rooster (die op de heap is
       gealloceerd), dat overeenkomt met de gegeven beschrijving.
       De begintoestand is BEGIN.
 
-      Als de beschrijving niet consistent is (bijvoorbeeld
-      niet alle rijen zijn even lang, of er klopt iets anders niet), of
-      als niet voldoende geheugen kan worden gereserveerd, dan wordt
+      Als er niet voldoende geheugen kan worden gereserveerd, dan wordt
       NULL teruggegeven. (In dat geval blijft geen gereserveerd geheugen
       achter.)
 */
 rooster *rooster_maak(int breedte, int hoogte, float prob);
 
 
-/* Sla een rooster op met de gegeven bestandsnaam in de subdirectory "assets".
+void rooster_plaats_random(const rooster *rp, int x, int y, float prob, int waarde_1, int waarde_2);
 
-   fh: de stream waar het doolhof heen geschreven moet worden.
-
-   Side effect: het doolhof wordt naar de stream gestuurd.
-*/
-void rooster_schrijf(const rooster *rp, FILE *fh);
 
 rooster *rooster_kopieer(const rooster *rp);
 
