@@ -1,11 +1,14 @@
-/* rooster.h
+/*
+ * Naam : Derk Niessink
+ * UvAnetID : 13438921
+ * Studie : BSc Informatica
+ *
+ * rooster.h
+ *
+ * Deze module verzorgt het datatype "rooster". Een rooster representeert een
+ * rechthoekig grid van objecten. Elk object is in dit rooster een int.
+ */
 
-   Deze module verzorgt het datatype "rooster". Een rooster representeert een
-   rechthoekig grid van objecten. Elk object is in dit rooster een char.
-
-   Deze header file beschrijft het interface voor "rooster".
-   De implementatie, in "rooster.c", moet je grotendeels zelf schrijven.
-*/
 
 #ifndef _ROOSTER_H
 #define _ROOSTER_H
