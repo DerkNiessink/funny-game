@@ -1,6 +1,51 @@
-Dit bestand is pas van belang voor deel 2 van de opdracht.
+Handleiding LAVAPHOBIA
 
-Schrijf hier een korte handleiding voor je spel. Leg uit waar het spel over
-gaat, wat je moet doen en hoe je het moet besturen.
+Leuk dat je het spel LAVAPHOBIA wilt spelen! Het is handig om deze handleiding
+door te nemen voordat je het spel gaat spelen.
 
-Je mag ook de instructies in je spel zelf opnemen, vermeld dat dan hier even.
+
+BACKSTORY VAN LAVAPHOBIA
+
+Een jochie gemaakt van goud is verdwaald geraakt in een toren. Terwijl hij de
+uitgang probeert te vinden krijgt hij het opeens heel heet. Hij moet zelfs zijn
+kleren uittrekken, omdat het niet meer te harden is. Het helpt niet, en het
+blijft maar warmer worden. Na een tijdje wordt het zelfs zo warm dat een aantal
+muren in de fik vliegen!
+
+Het jochie weet niet waar deze hitte opeens vandaan komt en raakt in paniek.
+Vervolgens ziet hij opeens dat het gebouw vol loopt met lava. Het jochie kan
+nog drie seconden op de kaart kijken voordat hij echt omhoog moet klimmen om
+voor de lava te vluchten.
+
+Het jochie is klaarblijkelijk niet zo goed in kaart lezen, maar gelukkig kun
+jij hem helpen! Lukt het jullie samen om de uitgang op tijd te vinden en de
+brandende muren te ontwijken?
+
+
+
+CONTROLS
+
+Start het spel in de command line met het command: "./spel". Het jochie bevindt
+zich eerst rechts onderin de toren. Navigeer hem met de pijltjestoetsen naar de
+uitgang aan de bovenkant van de toren.
+
+Wanneer het jochie verbrandt, heb je verloren en wanneer hij de uitgang bereikt,
+heb je gewonnen. Vervolgens wordt er een menu getoond waarbij de speler kan
+kiezen om het spel te verlaten, het level opnieuw te proberen of een nieuw
+level te genereren met respectievelijk de toetsen: "q", "r" en "g".
+
+
+
+LEVEL DESIGN
+
+Elk level is random gegenereerd. Dit geld zowel voor de muren als de muren die
+in de fik staan. De levels die worden gegenereert hebben altijd een pad van
+onder naar boven.
+
+De gevorderde speler kan eventueel het level moeilijker maken, door bovenaan in
+de "spel.c" module de aangegeven moeijkheidsparameters aan te passen. Zo kan
+het rooster groter worden gemaakt, de stroomsnelheid van het lava worden
+versneld en het aantal brandende muren worden verhoogd. Let wel: Een grote
+aanpassing van deze waarden kan zorgen voor een significant langere laadtijd of
+een crash van het programma.
+

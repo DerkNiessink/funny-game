@@ -3,8 +3,9 @@
  * UvAnetID : 13438921
  * Studie : BSc Informatica
  *
- * opdracht_2.c:
- * − Dit is een programma voor een spel waarin de speler met de
+ * spel.c:
+ *
+ * − Dit is een programma voor het spel LAVAPHOBIA waarin de speler met de
  * pijltjestoetsen een toren moet beklimmen. De speler moet zowel snel als
  * voorzichtig zijn omdat de toren zich vult met lava en sommige delen van de
  * muren al in de fik staan. De levels zijn random gegeneert met een bepaalde
@@ -26,11 +27,11 @@
 #include "burning.h"
 
 
-/* Deze waardes bepalen de moeilijkheid van het spel */
+/* DEZE WAARDES BEPALEN DE MOEILIJKHEID VAN HET SPEL */
 #define BREEDTE    50
 #define HOOGTE     40
 #define PAD_KANS   0.48
-#define LAVA_KANS  0.05
+#define LAVA_KANS  0.07
 #define LAVA_TIJD  30
 
 /* Spel objecten */
@@ -274,7 +275,7 @@ void speel(rooster *rp) {
 
 
 /* Maakt een random rooster en check met het Burning algoritme of deze een pad
-   heeft van onder naar boven. Als dit het geval is, plaats de buitenmuren en 
+   heeft van onder naar boven. Als dit het geval is, plaats de buitenmuren en
    de speler.
 
    Side-effect: Sluit het spel af en geef een foutmelding als er iets fout is
@@ -288,17 +289,14 @@ rooster *vind_random_rooster(void) {
     int tijd = time(0);
     while(1) {
 
-        if ((time(0) - tijd) > 15) {
+        if ((time(0) - tijd) > 20) {
             printf("Er kon geen level gegegeneerd worden binnen de maximale tijd. ");
             printf("Probeer eventueel de PAD_KANS bovenaan het programma te verhogen.\n");
             exit(1);
         }
 
         rp = rooster_maak(BREEDTE, HOOGTE, PAD_KANS);
-        if (rp == NULL) {
-            printf("Er is een fout opgetreden bij het genereren van een level.");
-            exit(1);
-        }
+        rooster_check(rp);
 
         if (burn_alg(rp) == 1) {
             break;
@@ -394,6 +392,7 @@ int toon_menu(rooster *rp, rooster *rp_onaangepast) {
     switch(keuze) {
         case OPNIEUW:;
             rooster *rp_onaangepast_kopie = rooster_kopieer(rp_onaangepast);
+            rooster_check(rp_onaangepast_kopie);
             speel(rp_onaangepast);
             return toon_menu(rp_onaangepast, rp_onaangepast_kopie);
 
@@ -403,6 +402,8 @@ int toon_menu(rooster *rp, rooster *rp_onaangepast) {
             rooster_klaar(rp_onaangepast);
             rooster *nieuw_rooster = vind_random_rooster();
             rooster *nieuw_rooster_kopie = rooster_kopieer(nieuw_rooster);
+            rooster_check(nieuw_rooster);
+            rooster_check(nieuw_rooster_kopie);
             speel(nieuw_rooster);
             return toon_menu(nieuw_rooster, nieuw_rooster_kopie);
     }
@@ -438,6 +439,9 @@ int main(int argc, char *argv[]) {
 
     rooster *rooster1 = vind_random_rooster();
     rooster *rooster1_kopie = rooster_kopieer(rooster1);
+    rooster_check(rooster1);
+    rooster_check(rooster1_kopie);
+
     init_ncurses();
 
     speel(rooster1);
